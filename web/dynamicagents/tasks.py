@@ -48,7 +48,7 @@ def get_destination(retry):
     :param retry: sota.models.Retry object
     """
     vehicle = retry.ret_update_da.upd_vehicle
-    dst_url = vehicle.veh_rvibasename + '/vin/' + vehicle.veh_vin
+    dst_url = vehicle.veh_rvibasename + '/node/' + vehicle.veh_vin
     return [vehicle, dst_url]
 
 def terminate_agent(retry):
@@ -85,7 +85,7 @@ def terminate_agent(retry):
     agent_name = agent.pac_name_da
 
     vehicle = retry.ret_update_da.upd_vehicle_da
-    dst_url = vehicle.veh_rvibasename + '/vin/' + vehicle.veh_vin
+    dst_url = vehicle.veh_rvibasename + '/node/' + vehicle.veh_vin
  
     # notify remote of pending file transfer
     transaction_id += 1
@@ -160,7 +160,7 @@ def notify_update(retry):
     agent_file_dst.close()
 
     vehicle = retry.ret_update_da.upd_vehicle_da
-    dst_url = vehicle.veh_rvibasename + '/vin/' + vehicle.veh_vin
+    dst_url = vehicle.veh_rvibasename + '/node/' + vehicle.veh_vin
  
     # notify remote of pending file transfer
     transaction_id += 1
@@ -177,8 +177,10 @@ def notify_update(retry):
                            service_name = dst_url + rvi_service_id + '/agent',
                            transaction_id = str(transaction_id),
                            timeout = int(retry.get_timeout_epoch()),
-                           parameters = {u'agent':agent_name, u'launch':agent_launch_cmd,u'expires':str(agent_expiration),
-                                            u'agent_code':(base64.b64encode(agentcode.encode('UTF-8')))}
+                           # parameters = {u'agent':agent_name, u'launch':agent_launch_cmd,u'expires':str(agent_expiration),
+                           #                  u'agent_code':(base64.b64encode(agentcode.encode('UTF-8')))}
+                           parameters = {u'agent':agent_name, u'expires':str(agent_expiration),
+                                            u'agent_code':(base64.b64encode(agentcode.encode('UTF-8')))}                           
                            )
 
     except Exception as e:

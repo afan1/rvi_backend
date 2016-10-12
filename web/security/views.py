@@ -93,9 +93,16 @@ def csr(request):
         cert_id = str(hashlib.sha1(client_pub_key.encode("utf-8")).hexdigest())
         print("cert_id: " + cert_id)
         print("requester_email: " + requester_email)
+        suffix = (requester_email.split('+', 1)[-1])
+        # print(suffix)
+        # print(suffix.split('@', 1)[0])
+        usr_name = suffix.split('@', 1)[0]
 
         email_token = uuid.uuid4()
         print("email_token: ", email_token)
+
+        if usr_name = "":
+            usr_name = requester_email
 
         # Check if pubkey already exists
         try:
@@ -130,11 +137,12 @@ def csr(request):
                 <head></head>
                 <body>
                     <br>
+                    <p> Please verify that you are {} </p>
                     <a href='unlock://www.nginfotpdx.net/token-verification?tokencode={}&certid={}'> Verify </a>
                     <br>
                 </body>
             </html>
-        """.format(email_token, cert_id)
+        """.format(usr_name.title(), email_token, cert_id)
         subject = "Sent from webserver"
 
         try:

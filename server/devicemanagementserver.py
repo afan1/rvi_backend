@@ -45,8 +45,8 @@ signing_file = open("rsaprivkey.key", "r")
 signing_key = RSA.importKey(signing_file.read())
 signing_file.close()
 
-url_vehicle = "192.168.16.78"
-port_vehicle = 9010
+url_vehicle = "38.129.64.42"
+port_vehicle = 9876
 
 # Certificate Services Callback Server
 class DeviceManagementServer(threading.Thread):

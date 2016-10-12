@@ -12,6 +12,8 @@ from django.conf import settings
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 
+from security import views as security_views
+
 admin.autodiscover()
 
 urlpatterns = patterns('',
@@ -35,6 +37,13 @@ urlpatterns = patterns('',
     url(r'^history/$', 'servicehistory.views.history', name='owner_history'),
     url(r'^keys/$', 'ownerportal.views.keys', name='owner_keys'),
     url(r'^logout/$', 'ownerportal.views.logout_user', name='logout'),
+
+    url(r'^csr$', security_views.csr , name='csr'),
+    url(r'^csr/$', security_views.csr , name='csr'),
+    url(r'^verification$', security_views.verify , name='verify'),
+    url(r'^verification/$', security_views.verify , name='verify'),
+    url(r'^csr_veh$', security_views.csr_veh , name='csr_veh'),
+    url(r'^csr_veh/$', security_views.csr_veh , name='csr_veh'),
 )
 
 # uploaded files

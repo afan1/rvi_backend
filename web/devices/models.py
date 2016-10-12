@@ -23,14 +23,21 @@ class Device(Account):
     """
     dev_name    = models.CharField('Device Name', max_length=256)
     dev_owner   = models.CharField('Owner', max_length=256)
-    dev_mdn     = models.CharField('Phone Number', max_length=256)
+    dev_mdn     = models.CharField('Phone Number', max_length=256, default="default-number")
     dev_min     = models.CharField('Mobile Identification Number', max_length=256, null=True, blank=True)
     dev_imei    = models.CharField('Mobile Equipment Identifier', max_length=256, null=True, blank=True)
     dev_wifimac = models.CharField('WiFi MAC', max_length=256, null=True, blank=True)
     dev_btmac   = models.CharField('Bluetooth MAC', max_length=256, null=True, blank=True)
-    dev_uuid    = models.CharField('UUID', max_length=256)
+    dev_uuid    = models.CharField('UUID', max_length=256, default="default-uuid")
     dev_key     = models.OneToOneField(JSONWebKey, verbose_name = 'Key', null=True)
-    dev_rvibasename = models.CharField('RVI Domain', max_length=256)
+    dev_rvibasename = models.CharField('RVI Domain', max_length=256, default="genivi.org")
+
+    dev_token   = models.CharField('Verification Token', max_length=256, null=True)
+    dev_cert_req = models.TextField("CSR")
+    dev_root_reply = models.TextField("Root Server Reply", null=True)
+    dev_validated = models.BooleanField('Validated', default=False)
+    dev_signed_client = models.TextField("Signed Client Cert", null=True)
+
 
     class Meta:
         verbose_name_plural = "Devices"

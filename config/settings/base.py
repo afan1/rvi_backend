@@ -114,7 +114,7 @@ LOGIN_URL = '/login/'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'rvi',
+        'NAME': 'mobileunlock',
         'USER': 'rvi_user',
         'PASSWORD': 'rvi',
         'CHARSET': 'utf8',
@@ -261,7 +261,7 @@ LEAFLET_ANIMATION_INTERVAL = "100"
 # RVI Server Daemon Configuration
 RVI_DB_PING_INTERVAL = 10
 RVI_DB_CLOSE_TIMEOUT = 3600
-RVI_SERVICE_EDGE_URL = 'http://127.0.0.1:8801'
+RVI_SERVICE_EDGE_URL = 'http://127.0.0.1:9001'
 
 # SOTA
 RVI_SOTA_ENABLE = False
@@ -280,8 +280,8 @@ RVI_CANFW_CALLBACK_URL = 'http://127.0.0.1:20007'
 RVI_CANFW_SERVICE_ID = '/canfw'
 RVI_CANFW_NUM_PRIO = 16
 
-# Device Management
-RVI_DM_SERVICE_ID = '/dm'
+# Credential Management
+RVI_DM_SERVICE_ID = '/account_management'
 
 # Tracking
 # RVI_TRACKING_SOURCE_GPS = True

@@ -101,7 +101,7 @@ def csr(request):
         email_token = uuid.uuid4()
         print("email_token: ", email_token)
 
-        if usr_name = "":
+        if usr_name == "":
             usr_name = requester_email
 
         # Check if pubkey already exists

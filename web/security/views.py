@@ -103,7 +103,9 @@ def csr(request):
             user.save()
             print("Creating user: {}".format(requester_email))
 
-        cert_id = str(hashlib.sha1(client_pub_key.encode("utf-8")).hexdigest())
+        stripped_pub = client_pub_key.replace("\n", "")
+
+        cert_id = str(hashlib.sha1(stripped_pub.encode("utf-8")).hexdigest())
         print("cert_id: " + cert_id)
         print("requester_email: " + requester_email)
         suffix = (requester_email.split('+', 1)[-1])
@@ -119,8 +121,14 @@ def csr(request):
 
         # Check if pubkey already exists
         try:
-            device = Device.objects.get(dev_name=cert_id)
+            device = Device.objects.get(dev_uuid=node_uuid)
             print(device)
+            if device.dev_name != cert_id:
+                device.dev_name = cert_id
+                device.dev_cert_req = str_data
+                device.account = user
+                device.dev_owner = requester_email
+                
             device.dev_token = email_token
             device.save()
         except Exception as e:

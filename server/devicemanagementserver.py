@@ -562,18 +562,13 @@ def revoke_remote(username, first_name, last_name, guests, vehicles):
 
 
 def request_creds(node_identifier, public_key):
-    # rvi_logger.info(SERVER_NAME + 'Remote (Certificate) request to send all by VIN: \n'
-    #                 'vehicleVIN: %s\n'
-    #                 'mobileUUID: %s',
-    #                 vehicleVIN, mobileUUID)
+
     rvi_logger.info("Credential request by nodeID: {} | pubKeyID: {}".format(node_identifier, public_key))
 
-    # public_key = str(dump_publickey(FILETYPE_PEM,load_publickey(FILETYPE_PEM, public_key)).decode("utf-8"))
-
-    # print("In request_creds")
-
-    # pubKeyID = str(hashlib.sha1(public_key.encode("utf-8")).hexdigest())
     try:
+        public_key = public_key.replace("\n", "")
+        cert_id = str(hashlib.sha1(stripped_pub.encode("utf-8")).hexdigest())
+
         nodeID = node_identifier.rsplit("/", 1)[-1]
         dev, user = validate_device(nodeID)
     except Exception:

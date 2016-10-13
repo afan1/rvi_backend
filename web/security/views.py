@@ -58,15 +58,25 @@ cert_file.close()
 @require_POST
 def csr(request):
     try:
+        error_dict = {"status":"error"}
+        result_dict = {}
         print(request.body)
         data = request.body
 
-        str_data = str(data.decode('utf-8'))
-        # try:
-        #     curs = db.cursor()
-        # except:
-        #     db = MySQLdb.connect(host="localhost", port=3306,user="pki", passwd="pki",db="pki")
-        #     curs = db.cursor()
+        try:
+            json_data = json.loads(str(data.decode('utf-8')))
+            if json_data["type"] != "certificate_signing_request"
+                error_dict["reason"] = "Not a CSR request"
+                return HttpResponse(json.dumps(error_dict))
+            str_data = json_data["certificate_signing_request"]
+
+        except Exception as e:
+            print(e)
+            error_dict["reason"] = "Could not find csr object"
+            return HttpResponse(json.dumps(error_dict))
+
+        # str_data = str(data.decode('utf-8'))
+
 
         cert = load_certificate_request(FILETYPE_PEM, str_data)
         client_pub_key = str(dump_publickey(FILETYPE_PEM, cert.get_pubkey()).decode("utf-8"))
@@ -114,31 +124,13 @@ def csr(request):
             new_device = Device.objects.create(account=user, dev_name=cert_id, dev_owner=requester_email, dev_token=email_token, dev_cert_req=str_data, dev_uuid=node_uuid)
             new_device.save()
 
-        # try:
-        #     curs.execute(
-        #         """INSERT INTO pki.csrs (email, date_requested, confirmation_token, token_date, cert_request, validated, cert_id) 
-        #             VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-        #         (requester_email, time.strftime('%Y-%m-%d %H:%M:%S'), email_token, 
-        #         time.strftime('%Y-%m-%d %H:%M:%S'), str_data, 0, cert_id)
-        #     )
-        # except:
-        #     curs.execute(
-        #         """REPLACE INTO pki.csrs (email, date_requested, confirmation_token, token_date, cert_request, validated, cert_id) 
-        #             VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-        #         (requester_email, time.strftime('%Y-%m-%d %H:%M:%S'), email_token, 
-        #         time.strftime('%Y-%m-%d %H:%M:%S'), str_data, 0, cert_id)
-        #     )
-
-        # db.commit()
-        # curs.close()
-
         content="""
             <html>
                 <head></head>
                 <body>
                     <br>
                     <p> Please verify that you are {} </p>
-                    <a href='unlock://www.nginfotpdx.net/token-verification?tokencode={}&certid={}'> Verify </a>
+                    <a href='unlock://www.nginfotpdx.net/token-verification?token={}&certificate_id={}'> Verify </a>
                     <br>
                 </body>
             </html>
@@ -165,24 +157,44 @@ def csr(request):
 
         except Exception as exc:
             print(exc) # give a error message
+            error_dict["reason"] = "Could not send verification email"
+            return(HttpResponse(json.dumps(error_dict)))
 
 
-        return HttpResponse("INFO: CSR RECEIVED\n")
+        result_dict["status"] = "verification_needed"
+        result_dict["message"] = "Email sent. Please check to verify device."
+        return HttpResponse(json.dumps(result_dict))
 
     except Exception as e:
         print("Not a valid pem CSR, {}".format(e))
-        return HttpResponse("Not a valid pem CSR")
+        error_dict["reason"] = "Could not verify CSR"
+        return HttpResponse(json.dumps(error_dict))
 
-    return HttpResponse("What")
+    error_dict["reason"] = "Could not verify CSR"
+    return HttpResponse(json.dumps(error_dict))
 
 
 @csrf_exempt
 @require_POST
 def verify(request):
 
+    error_dict = {"status":"error"}
+    result_dict = {}
+
     data = request.body
 
-    str_data = str(data.decode('utf-8'))
+    try:
+        json_data = json.loads(str(data.decode('utf-8')))
+        if json_data["type"] != "token_verification"
+            error_dict["reason"] = "Not a token_verification"
+            return HttpResponse(json.dumps(error_dict))
+        str_data = json_data["jwt"]
+
+    except Exception as e:
+        print(e)
+        error_dict["reason"] = "Could not find jwt"
+        return HttpResponse(json.dumps(error_dict))
+    # str_data = str(data.decode('utf-8'))
 
     try:
         decoded = jwt.decode(str_data, verify=False)
@@ -196,14 +208,16 @@ def verify(request):
             device = Device.objects.get(dev_name=sub["certId"])
         except:
             print("No device found")
-            return HttpResponse("No device with pubkey found")
+            error_dict["reason"] = "No device with pubkey found"
+            return HttpResponse(json.dumps(error_dict))
 
 
         client_cert = load_certificate_request(FILETYPE_PEM, device.dev_cert_req)
         client_pub_key = dump_publickey(FILETYPE_PEM, client_cert.get_pubkey())
     except Exception as e:
         print(e)
-        return HttpResponse("Verification Unsuccessful")
+        error_dict["reason"] = "Loading of certificates failed"
+        return HttpResponse(json.dumps(error_dict))
 
     try:
         verify = jwt.decode(str_data, client_pub_key, algorithm=["rsa256"])
@@ -216,62 +230,71 @@ def verify(request):
 
         else:
             print("Not valid token code")
-            return HttpResponse("Token code not matched")
+            error_dict["reason"] = "Token verification code does not match"
+            return HttpResponse(json.dumps(error_dict))
 
     except Exception as e:
         print(e)
-        return HttpResponse("Verification Unsuccessful")
+        error_dict["reason"] = "Token verification code does not match"
+        return HttpResponse(json.dumps(error_dict))
 
-    cert = crypto.X509()
-    cert.set_serial_number(int(time.time()*1000))
-    cert.gmtime_adj_notBefore(0)
-    cert.gmtime_adj_notAfter(31536000)
+    try:
+        cert = crypto.X509()
+        cert.set_serial_number(int(time.time()*1000))
+        cert.gmtime_adj_notBefore(0)
+        cert.gmtime_adj_notAfter(31536000)
 
-    cert.set_issuer(cert_key.get_subject())
-    cert.set_subject(client_cert.get_subject())
-    cert.set_pubkey(client_cert.get_pubkey())
+        cert.set_issuer(cert_key.get_subject())
+        cert.set_subject(client_cert.get_subject())
+        cert.set_pubkey(client_cert.get_pubkey())
 
-    cert.sign(root_key, "sha256")
+        cert.sign(root_key, "sha256")
 
-    str_signed_client = str(dump_certificate(FILETYPE_PEM, cert).decode("utf-8"))
+        str_signed_client = str(dump_certificate(FILETYPE_PEM, cert).decode("utf-8"))
 
-    device.dev_signed_client = str_signed_client
-    device.save()
+        device.dev_signed_client = str_signed_client
+        device.save()
 
-    reply = {}
+        reply = {}
 
-    reply["signed_certificate"] = str_signed_client
-    reply["server_certificate"] = raw_cert
+        reply["signed_certificate"] = str_signed_client
+        reply["server_certificate"] = raw_cert
 
-    # stripped_client = str_signed_client.replace("-----BEGIN CERTIFICATE-----\n", "").replace("-----END CERTIFICATE-----\n", "").replace("\n", "").replace("\r", "")
-    stripped_client = str_signed_client.replace("-----BEGIN CERTIFICATE-----\n", "").replace("-----END CERTIFICATE-----\n", "").replace("\n", "").replace("\r", "")
+        # stripped_client = str_signed_client.replace("-----BEGIN CERTIFICATE-----\n", "").replace("-----END CERTIFICATE-----\n", "").replace("\n", "").replace("\r", "")
+        stripped_client = str_signed_client.replace("-----BEGIN CERTIFICATE-----\n", "").replace("-----END CERTIFICATE-----\n", "").replace("\n", "").replace("\r", "")
 
-    cred = {
-        "iss" : "GENIVI",
-        "id" : "temp",
-        # "right_to_receive" : "genivi.org/android/",
-        # "right_to_invoke" : "genivi.org/+/+/dm/",
-        "right_to_receive" : ["genivi.org/android/" + device.dev_uuid +"/"],
-        "right_to_invoke" : ["genivi.org/+/+/credential_management/"],
-        "device_cert" : stripped_client,
-        "validity" : {
-            "start" : int(time.time()),
-            "stop" : int(time.time()) + 31536000
+        cred = {
+            "iss" : "GENIVI",
+            "id" : "temp",
+            # "right_to_receive" : "genivi.org/android/",
+            # "right_to_invoke" : "genivi.org/+/+/dm/",
+            "right_to_receive" : ["genivi.org/android/" + device.dev_uuid +"/"],
+            "right_to_invoke" : ["genivi.org/+/+/credential_management/"],
+            "device_cert" : stripped_client,
+            "validity" : {
+                "start" : int(time.time()),
+                "stop" : int(time.time()) + 31536000
+            }
         }
-    }
 
-    # print(cred)
+        # print(cred)
 
-    encoded_jwt = jwt.encode(cred, signing_key.exportKey("PEM"), algorithm="RS256")
+        encoded_jwt = jwt.encode(cred, signing_key.exportKey("PEM"), algorithm="RS256")
 
-    reply["jwt"] = [encoded_jwt.decode("utf-8")]
+        reply["jwt"] = [encoded_jwt.decode("utf-8")]
 
-    # print(reply)
-    device.dev_root_reply = json.dumps(reply)
-    device.save()
+        # print(reply)
+        device.dev_root_reply = json.dumps(reply)
+        device.save()
 
+        reply["status"] = "certificate_response"
 
-    return HttpResponse(json.dumps(reply))
+        return HttpResponse(json.dumps(reply))
+
+    except Exception as e:
+        print(e)
+        error_dict["reason"] = "Could not create signed certs and jwt"
+        return HttpResponse(json.dumps(error_dict))
 
 @csrf_exempt
 @require_POST
@@ -320,5 +343,3 @@ def csr_veh(request):
     
     print(reply)
     return(HttpResponse(json.dumps(reply)))
-
-    # return HttpResponse(json.dumps(reply))

@@ -65,7 +65,7 @@ def csr(request):
 
         try:
             json_data = json.loads(str(data.decode('utf-8')))
-            if json_data["type"] != "certificate_signing_request"
+            if json_data["type"] != "certificate_signing_request":
                 error_dict["reason"] = "Not a CSR request"
                 return HttpResponse(json.dumps(error_dict))
             str_data = json_data["certificate_signing_request"]
@@ -185,7 +185,7 @@ def verify(request):
 
     try:
         json_data = json.loads(str(data.decode('utf-8')))
-        if json_data["type"] != "token_verification"
+        if json_data["type"] != "token_verification":
             error_dict["reason"] = "Not a token_verification"
             return HttpResponse(json.dumps(error_dict))
         str_data = json_data["jwt"]

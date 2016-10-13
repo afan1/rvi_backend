@@ -566,7 +566,7 @@ def request_creds(node_identifier, public_key):
     rvi_logger.info("Credential request by nodeID: {} | pubKeyID: {}".format(node_identifier, public_key))
 
     try:
-        public_key = public_key.replace("\n", "")
+        stripped_pub = public_key.replace("\n", "")
         cert_id = str(hashlib.sha1(stripped_pub.encode("utf-8")).hexdigest())
 
         nodeID = node_identifier.rsplit("/", 1)[-1]

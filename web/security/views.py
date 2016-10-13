@@ -63,11 +63,14 @@ def csr(request):
         print(request.body)
         data = request.body
 
+        print(str(data.decode('utf-8')))
+
         try:
             json_data = json.loads(str(data.decode('utf-8')))
             if json_data["type"] != "certificate_signing_request":
                 error_dict["reason"] = "Not a CSR request"
                 return HttpResponse(json.dumps(error_dict))
+            print(json_data)
             str_data = json_data["certificate_signing_request"]
 
         except Exception as e:
@@ -202,10 +205,10 @@ def verify(request):
 
         # components = jwt.decode(str_data, '')
         print("token: " + sub["token"])
-        print("certId: " + sub["certId"])
+        print("certId: " + sub["certificate_id"])
 
         try:
-            device = Device.objects.get(dev_name=sub["certId"])
+            device = Device.objects.get(dev_name=sub["certificate_id"])
         except:
             print("No device found")
             error_dict["reason"] = "No device with pubkey found"
